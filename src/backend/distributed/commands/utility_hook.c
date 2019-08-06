@@ -322,6 +322,15 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 					break;
 				}
 
+				case OBJECT_FUNCTION:
+				{
+					/*
+					 * Currently this function always returns NIL,
+					 * but determines if the drop function should be propagated to workers
+					 */
+					ddlJobs = PlanDropFunctionStmt(dropStatement, queryString);
+				}
+
 				default:
 				{
 					/* unsupported type, skipping*/

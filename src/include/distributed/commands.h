@@ -130,6 +130,12 @@ extern DropStmt * CompositeTypeStmtToDrop(CompositeTypeStmt *stmt);
 extern DropStmt * CreateEnumStmtToDrop(CreateEnumStmt *stmt);
 extern List * CreateTypeDDLCommandsIdempotent(const ObjectAddress *typeAddress);
 
+/* function.c - forward declarations */
+extern List * PlanAlterFunctionStmt(AlterFunctionStmt *alterFunctionStatement,
+									const char *alterFunctionCommand);
+extern List * PlanDropFunctionStmt(DropStmt *dropFunctionStatement,
+								   const char *dropFunctionCommand);
+
 /* vacuum.c - froward declarations */
 extern void ProcessVacuumStmt(VacuumStmt *vacuumStmt, const char *vacuumCommand);
 

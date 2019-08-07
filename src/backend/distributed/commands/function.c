@@ -119,9 +119,7 @@ appendFunctionNameList(StringInfo buf, List *objects)
 
 		if (args)
 		{
-			appendStringInfoChar(buf, '(');
-			appendStringInfo(buf, args);
-			appendStringInfoChar(buf, ')');
+			appendStringInfo(buf, "(%s)", args);
 		}
 	}
 }

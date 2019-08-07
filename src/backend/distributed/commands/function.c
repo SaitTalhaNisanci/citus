@@ -19,6 +19,7 @@
 #include <server/lib/stringinfo.h>
 #include <server/nodes/print.h>
 #include <server/catalog/namespace.h>
+#include <server/parser/parse_type.h>
 
 static const char * deparse_drop_function_stmt(DropStmt *stmt);
 static void appendDropFunctionStmt(StringInfo buf, DropStmt *stmt);
@@ -111,7 +112,16 @@ appendFunctionNameList(StringInfo buf, List *objects)
 		 */
 		ObjectWithArgs *objectWithArgs = castNode(ObjectWithArgs, object);
 		char *name = NameListToString(objectWithArgs->objname);
+		char *args = TypeNameListToString(objectWithArgs->objargs);
+
 		appendStringInfoString(buf, name);
+
+		if (args)
+		{
+			appendStringInfoChar(buf, '(');
+			appendStringInfo(buf, args);
+			appendStringInfoChar(buf, ')');
+		}
 	}
 }
 

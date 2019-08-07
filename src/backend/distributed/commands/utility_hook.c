@@ -329,6 +329,7 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 					 * will determine if the drop function should be
 					 * propagated to workers
 					 */
+
 /*					elog(NOTICE, "%s", pretty_format_node_dump(nodeToString */
 /*					(parsetree))); */
 

@@ -94,6 +94,9 @@ appendFunctionNameList(StringInfo buf, List *objects)
 	foreach(objectCell, objects)
 	{
 		Node *object = lfirst(objectCell);
+		ObjectWithArgs *objectWithArgs = NULL;
+		char *name = NULL;
+		char *args = NULL;
 
 		if (objectCell != list_head(objects))
 		{
@@ -101,20 +104,20 @@ appendFunctionNameList(StringInfo buf, List *objects)
 		}
 
 		/*
-		 * TODO: I made a blind guess and assumed this object is always an
-		 * instance of ObjectWithArgs
+		 * TODO: Check that this assertion is correct
+		 *
+		 * I made a blind guess and assumed this object is always an instance
+		 * of ObjectWithArgs.
 		 */
 		Assert(IsA(object, ObjectWithArgs));
 
-		/*
-		 * TODO: check for optional argmode argname argtype options here
-		 */
-		ObjectWithArgs *objectWithArgs = castNode(ObjectWithArgs, object);
-		char *name = NameListToString(objectWithArgs->objname);
-		char *args = TypeNameListToString(objectWithArgs->objargs);
+		objectWithArgs = castNode(ObjectWithArgs, object);
+		name = NameListToString(objectWithArgs->objname);
+		args = TypeNameListToString(objectWithArgs->objargs);
 
 		appendStringInfoString(buf, name);
 
+		/* append the optional arg list if provided */
 		if (args)
 		{
 			appendStringInfo(buf, "(%s)", args);

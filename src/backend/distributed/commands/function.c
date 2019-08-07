@@ -52,8 +52,6 @@ PlanDropFunctionStmt(DropStmt *dropStmt,
 }
 
 
-static const char * format_function_be_qualified(Oid oid);
-
 static const char *
 deparse_drop_function_stmt(DropStmt *stmt)
 {
@@ -122,11 +120,4 @@ appendFunctionNameList(StringInfo buf, List *objects)
 			appendStringInfo(buf, "(%s)", args);
 		}
 	}
-}
-
-
-static const char *
-format_function_be_qualified(Oid oid)
-{
-	return NULL;
 }

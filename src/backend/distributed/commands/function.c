@@ -13,9 +13,12 @@
  */
 
 #include "postgres.h"
+#include "nodes/nodes.h"
 
 #include <server/nodes/parsenodes.h>
 #include <server/lib/stringinfo.h>
+#include <server/nodes/print.h>
+#include <server/catalog/namespace.h>
 
 static const char * deparse_drop_function_stmt(DropStmt *stmt);
 static void appendDropFunctionStmt(StringInfo buf, DropStmt *stmt);
@@ -26,19 +29,22 @@ List *
 PlanAlterFunctionStmt(AlterFunctionStmt *alterFunctionStatement,
 					  const char *alterFunctionCommand)
 {
-	ereport(DEBUG4, ((errmsg("ALTER FUNC distribution not implemented yet"),
-					  errhint("check function.c for more info"))));
+	ereport(LOG, ((errmsg("ALTER FUNC distribution not implemented yet"),
+				   errhint("check function.c for more info"))));
 
 	return NIL;
 }
 
 
 List *
-PlanDropFunctionStmt(DropStmt *dropFunctionStatement,
-					 const char *dropFunctionCommand)
+PlanDropFunctionStmt(DropStmt *dropStmt,
+					 const char *queryString)
 {
-	ereport(DEBUG4, ((errmsg("DROP FUNC distribution not implemented yet"),
-					  errhint("check function.c for more info"))));
+	const char *dropStmtSql = NULL;
+
+	dropStmtSql = deparse_drop_function_stmt(dropStmt);
+	ereport(LOG, (errmsg("deparsed drop function statement"),
+				  errdetail("sql: %s", dropStmtSql)));
 
 	return NIL;
 }
@@ -73,10 +79,6 @@ appendDropFunctionStmt(StringInfo buf, DropStmt *stmt)
 	appendStringInfo(buf, "DROP FUNCTION ");
 	appendFunctionNameList(buf, stmt->objects);
 
-	/*
-	 * TODO: check for optional argmode argname argtype options here
-	 */
-
 	if (stmt->behavior == DROP_CASCADE)
 	{
 		appendStringInfoString(buf, " CASCADE");
@@ -91,10 +93,25 @@ appendFunctionNameList(StringInfo buf, List *objects)
 	ListCell *objectCell = NULL;
 	foreach(objectCell, objects)
 	{
+		Node *object = lfirst(objectCell);
+
+		if (objectCell != list_head(objects))
+		{
+			appendStringInfo(buf, ", ");
+		}
+
 		/*
-		 * TODO: figure out how to iterate over all functions and get their
-		 * names etc here
+		 * TODO: I made a blind guess and assumed this object is always an
+		 * instance of ObjectWithArgs
 		 */
+		Assert(IsA(object, ObjectWithArgs));
+
+		/*
+		 * TODO: check for optional argmode argname argtype options here
+		 */
+		ObjectWithArgs *objectWithArgs = castNode(ObjectWithArgs, object);
+		char *name = NameListToString(objectWithArgs->objname);
+		appendStringInfoString(buf, name);
 	}
 }
 

@@ -325,10 +325,15 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 				case OBJECT_FUNCTION:
 				{
 					/*
-					 * Currently this function always returns NIL,
-					 * but determines if the drop function should be propagated to workers
+					 * Currently this function always returns NIL, but it
+					 * will determine if the drop function should be
+					 * propagated to workers
 					 */
+/*					elog(NOTICE, "%s", pretty_format_node_dump(nodeToString */
+/*					(parsetree))); */
+
 					ddlJobs = PlanDropFunctionStmt(dropStatement, queryString);
+					break;
 				}
 
 				default:

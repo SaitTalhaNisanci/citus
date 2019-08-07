@@ -13,13 +13,14 @@
  */
 
 #include "postgres.h"
-#include "nodes/nodes.h"
 
-#include <server/nodes/parsenodes.h>
-#include <server/lib/stringinfo.h>
-#include <server/nodes/print.h>
-#include <server/catalog/namespace.h>
-#include <server/parser/parse_type.h>
+#include "catalog/namespace.h"
+#include "lib/stringinfo.h"
+#include "nodes/nodes.h"
+#include "nodes/parsenodes.h"
+#include "parser/parse_type.h"
+
+#include "distributed/commands.h"
 
 static const char * deparse_drop_function_stmt(DropStmt *stmt);
 static void appendDropFunctionStmt(StringInfo buf, DropStmt *stmt);

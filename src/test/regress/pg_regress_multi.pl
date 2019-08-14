@@ -811,6 +811,9 @@ if ($vanillatest)
     $ENV{PGPORT} = $masterPort;
     $ENV{PGUSER} = $user;
 
+	# Don't use our custom diff
+	$ENV{PATH} =~ s/^[^:]+://; 
+
 	if (-f "$vanillaSchedule")
 	{
 	    rmdir "./testtablespace";
@@ -838,7 +841,7 @@ else
     system("$plainRegress", @arguments) == 0
 	or die "Could not run regression tests";
 }
-
+ 
 my $endTime = time();
 
 print "Finished in ". ($endTime - $startTime)." seconds. \n";

@@ -39,6 +39,7 @@
 
 /* Local functions forward declarations for helper functions */
 static List * CreateIndexTaskList(Oid relationId, IndexStmt *indexStmt);
+static List * CreateReindexTaskList(Oid relationId, ReindexStmt *reindexStmt);
 static void RangeVarCallbackForDropIndex(const RangeVar *rel, Oid relOid, Oid oldRelOid,
 										 void *arg);
 static void ErrorIfUnsupportedIndexStmt(IndexStmt *createIndexStatement);
@@ -172,65 +173,89 @@ PlanIndexStmt(IndexStmt *createIndexStatement, const char *createIndexCommand)
 
 
 /*
- * ErrorIfReindexOnDistributedTable determines whether a given REINDEX
- * involves a distributed table, & raises an error if so.
+ * PlanReindexStmt determines whether a given REINDEX statement involves
+ * a distributed table. If so (and if the statement does not use unsupported
+ * options), it modifies the input statement to ensure proper execution against
+ * the master node table and creates a DDLJob to encapsulate information needed
+ * during the worker node portion of DDL execution before returning that DDLJob
+ * in a List. If no distributed table is involved, this function returns NIL.
  */
-void
-ErrorIfReindexOnDistributedTable(ReindexStmt *ReindexStatement)
+List *
+PlanReindexStmt(ReindexStmt *ReindexStatement, const char *ReindexCommand)
 {
-	Relation relation = NULL;
-	Oid relationId = InvalidOid;
-	bool isDistributedRelation = false;
-	LOCKMODE lockmode = AccessShareLock;
+	List *ddlJobs = NIL;
 
 	/*
 	 * We first check whether a distributed relation is affected. For that, we need to
-	 * open the relation.
+	 * open the relation. To prevent race conditions with later lookups, lock the table,
+	 * and modify the rangevar to include the schema.
 	 */
-	if (ReindexStatement->relation == NULL)
+	if (ReindexStatement->relation != NULL)
 	{
-		/* ignore REINDEX SCHEMA, REINDEX SYSTEM, and REINDEX DATABASE */
-		return;
+		Relation relation = NULL;
+		Oid relationId = InvalidOid;
+		bool isDistributedRelation = false;
+		char *namespaceName = NULL;
+		LOCKMODE lockmode = ShareLock;
+		MemoryContext relationContext = NULL;
+
+		/*
+		 * XXX: Consider using RangeVarGetRelidExtended with a permission
+		 * checking callback. Right now we'll acquire the lock before having
+		 * checked permissions, and will only fail when executing the actual
+		 * index statements.
+		 */
+		if (ReindexStatement->kind == REINDEX_OBJECT_INDEX)
+		{
+			Oid indOid = RangeVarGetRelid(ReindexStatement->relation,
+										  NoLock, false);
+			relation = index_open(indOid, lockmode);
+			relationId = IndexGetRelation(indOid, false);
+		}
+		else
+		{
+			relation = heap_openrv(ReindexStatement->relation, lockmode);
+			relationId = RelationGetRelid(relation);
+		}
+
+		isDistributedRelation = IsDistributedTable(relationId);
+
+		/*
+		 * Before we do any further processing, fix the schema name to make sure
+		 * that a (distributed) table with the same name does not appear on the
+		 * search path in front of the current schema. We do this even if the
+		 * table is not distributed, since a distributed table may appear on the
+		 * search path by the time postgres starts processing this statement.
+		 */
+		namespaceName = get_namespace_name(RelationGetNamespace(relation));
+
+		/* ensure we copy string into proper context */
+		relationContext = GetMemoryChunkContext(ReindexStatement->relation);
+		namespaceName = MemoryContextStrdup(relationContext, namespaceName);
+		ReindexStatement->relation->schemaname = namespaceName;
+
+		if (ReindexStatement->kind == REINDEX_OBJECT_INDEX)
+		{
+			index_close(relation, NoLock);
+		}
+		else
+		{
+			heap_close(relation, NoLock);
+		}
+
+		if (isDistributedRelation)
+		{
+			DDLJob *ddlJob = palloc0(sizeof(DDLJob));
+			ddlJob->targetRelationId = relationId;
+			ddlJob->concurrentIndexCmd = false;
+			ddlJob->commandString = ReindexCommand;
+			ddlJob->taskList = CreateReindexTaskList(relationId, ReindexStatement);
+
+			ddlJobs = list_make1(ddlJob);
+		}
 	}
 
-	Assert(ReindexStatement->kind == REINDEX_OBJECT_INDEX ||
-		   ReindexStatement->kind == REINDEX_OBJECT_TABLE);
-
-	/*
-	 * XXX: Consider using RangeVarGetRelidExtended with a permission
-	 * checking callback. Right now we'll acquire the lock before having
-	 * checked permissions.
-	 */
-	if (ReindexStatement->kind == REINDEX_OBJECT_INDEX)
-	{
-		Oid indOid = RangeVarGetRelid(ReindexStatement->relation,
-									  NoLock, false);
-		relation = index_open(indOid, lockmode);
-		relationId = IndexGetRelation(indOid, false);
-	}
-	else
-	{
-		relation = heap_openrv(ReindexStatement->relation, lockmode);
-		relationId = RelationGetRelid(relation);
-	}
-
-	isDistributedRelation = IsDistributedTable(relationId);
-
-	if (ReindexStatement->kind == REINDEX_OBJECT_INDEX)
-	{
-		index_close(relation, NoLock);
-	}
-	else
-	{
-		heap_close(relation, NoLock);
-	}
-
-	if (isDistributedRelation)
-	{
-		ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						errmsg(
-							"REINDEX is not implemented for distributed relations")));
-	}
+	return ddlJobs;
 }
 
 
@@ -467,6 +492,52 @@ CreateIndexTaskList(Oid relationId, IndexStmt *indexStmt)
 		Task *task = NULL;
 
 		deparse_shard_index_statement(indexStmt, relationId, shardId, &ddlString);
+
+		task = CitusMakeNode(Task);
+		task->jobId = jobId;
+		task->taskId = taskId++;
+		task->taskType = DDL_TASK;
+		task->queryString = pstrdup(ddlString.data);
+		task->replicationModel = REPLICATION_MODEL_INVALID;
+		task->dependedTaskList = NULL;
+		task->anchorShardId = shardId;
+		task->taskPlacementList = FinalizedShardPlacementList(shardId);
+
+		taskList = lappend(taskList, task);
+
+		resetStringInfo(&ddlString);
+	}
+
+	return taskList;
+}
+
+
+/*
+ * CreateReindexTaskList builds a list of tasks to execute a REINDEX command
+ * against a specified distributed table.
+ */
+static List *
+CreateReindexTaskList(Oid relationId, ReindexStmt *reindexStmt)
+{
+	List *taskList = NIL;
+	List *shardIntervalList = LoadShardIntervalList(relationId);
+	ListCell *shardIntervalCell = NULL;
+	StringInfoData ddlString;
+	uint64 jobId = INVALID_JOB_ID;
+	int taskId = 1;
+
+	initStringInfo(&ddlString);
+
+	/* lock metadata before getting placement lists */
+	LockShardListMetadata(shardIntervalList, ShareLock);
+
+	foreach(shardIntervalCell, shardIntervalList)
+	{
+		ShardInterval *shardInterval = (ShardInterval *) lfirst(shardIntervalCell);
+		uint64 shardId = shardInterval->shardId;
+		Task *task = NULL;
+
+		deparse_shard_reindex_statement(reindexStmt, relationId, shardId, &ddlString);
 
 		task = CitusMakeNode(Task);
 		task->jobId = jobId;

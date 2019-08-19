@@ -210,9 +210,71 @@ SELECT * FROM pg_indexes WHERE tablename = 'lineitem' or tablename like 'index_t
 SET citus.log_remote_commands to on;
 SET client_min_messages = LOG;
 REINDEX INDEX lineitem_orderkey_index;
-ERROR:  REINDEX is not implemented for distributed relations
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 178, '2019-08-19 16:29:32.80553-07');
+DETAIL:  on server localhost:57638
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 178, '2019-08-19 16:29:32.80553-07');
+DETAIL:  on server localhost:57638
+LOG:  issuing REINDEX INDEX public.lineitem_orderkey_index_290000
+DETAIL:  on server localhost:57638
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 178, '2019-08-19 16:29:32.80553-07');
+DETAIL:  on server localhost:57637
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 178, '2019-08-19 16:29:32.80553-07');
+DETAIL:  on server localhost:57637
+LOG:  issuing REINDEX INDEX public.lineitem_orderkey_index_290001
+DETAIL:  on server localhost:57638
+LOG:  issuing REINDEX INDEX public.lineitem_orderkey_index_290000
+DETAIL:  on server localhost:57637
+LOG:  issuing REINDEX INDEX public.lineitem_orderkey_index_290001
+DETAIL:  on server localhost:57637
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_178_0'
+DETAIL:  on server localhost:57638
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_178_1'
+DETAIL:  on server localhost:57638
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_178_2'
+DETAIL:  on server localhost:57637
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_178_3'
+DETAIL:  on server localhost:57637
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_178_0'
+DETAIL:  on server localhost:57638
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_178_1'
+DETAIL:  on server localhost:57638
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_178_2'
+DETAIL:  on server localhost:57637
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_178_3'
+DETAIL:  on server localhost:57637
 REINDEX TABLE lineitem;
-ERROR:  REINDEX is not implemented for distributed relations
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 179, '2019-08-19 16:29:32.863441-07');
+DETAIL:  on server localhost:57638
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 179, '2019-08-19 16:29:32.863441-07');
+DETAIL:  on server localhost:57637
+LOG:  issuing REINDEX TABLE public.lineitem_290000
+DETAIL:  on server localhost:57638
+LOG:  issuing REINDEX TABLE public.lineitem_290000
+DETAIL:  on server localhost:57637
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 179, '2019-08-19 16:29:32.863441-07');
+DETAIL:  on server localhost:57637
+LOG:  issuing REINDEX TABLE public.lineitem_290001
+DETAIL:  on server localhost:57637
+LOG:  issuing BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;SELECT assign_distributed_transaction_id(0, 179, '2019-08-19 16:29:32.863441-07');
+DETAIL:  on server localhost:57638
+LOG:  issuing REINDEX TABLE public.lineitem_290001
+DETAIL:  on server localhost:57638
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_179_4'
+DETAIL:  on server localhost:57638
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_179_5'
+DETAIL:  on server localhost:57637
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_179_6'
+DETAIL:  on server localhost:57637
+LOG:  issuing PREPARE TRANSACTION 'citus_0_1116_179_7'
+DETAIL:  on server localhost:57638
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_179_4'
+DETAIL:  on server localhost:57638
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_179_5'
+DETAIL:  on server localhost:57637
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_179_6'
+DETAIL:  on server localhost:57637
+LOG:  issuing COMMIT PREPARED 'citus_0_1116_179_7'
+DETAIL:  on server localhost:57638
 REINDEX SCHEMA public;
 REINDEX DATABASE regression;
 REINDEX SYSTEM regression;

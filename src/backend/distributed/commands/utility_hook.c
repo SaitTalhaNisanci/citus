@@ -281,7 +281,15 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 
 		if (IsA(parsetree, ReindexStmt))
 		{
-			ErrorIfReindexOnDistributedTable((ReindexStmt *) parsetree);
+			MemoryContext oldContext = MemoryContextSwitchTo(GetMemoryChunkContext(
+																 parsetree));
+
+			/* copy parse tree since we might scribble on it to fix the schema name */
+			parsetree = copyObject(parsetree);
+
+			MemoryContextSwitchTo(oldContext);
+
+			ddlJobs = PlanReindexStmt((ReindexStmt *) parsetree, queryString);
 		}
 
 		if (IsA(parsetree, DropStmt))

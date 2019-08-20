@@ -17,6 +17,7 @@
 #include "distributed/commands.h"
 #include "distributed/deparser.h"
 
+
 List *
 PlanAlterFunctionStmt(AlterFunctionStmt *alterFunctionStatement,
 					  const char *alterFunctionCommand)

@@ -74,14 +74,7 @@ appendFunctionNameList(StringInfo buf, List *objects)
 			appendStringInfo(buf, ", ");
 		}
 
-		/*
-		 * TODO: Check that this assertion is correct
-		 *
-		 * I made a blind guess and assumed this object is always an instance
-		 * of ObjectWithArgs.
-		 */
 		Assert(IsA(object, ObjectWithArgs));
-
 		objectWithArgs = castNode(ObjectWithArgs, object);
 		name = NameListToString(objectWithArgs->objname);
 

@@ -321,6 +321,7 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 				case OBJECT_TYPE:
 				{
 					ddlJobs = PlanDropTypeStmt(dropStatement, queryString);
+					break;
 				}
 
 				default:

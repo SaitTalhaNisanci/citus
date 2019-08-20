@@ -27,11 +27,16 @@ extern char * format_collate_extended(Oid collid, bits16 flags);
 
 extern const char * DeparseTreeNode(Node *stmt);
 
+/* forward declarations for deparse_type_stmts.c */
 extern const char * deparse_create_type_stmt(Node *stmt);
 extern const char * deparse_composite_type_stmt(CompositeTypeStmt *stmt);
 extern const char * deparse_create_enum_stmt(CreateEnumStmt *stmt);
 extern const char * deparse_drop_type_stmt(DropStmt *stmt);
 extern const char * deparse_alter_enum_stmt(AlterEnumStmt *stmt);
 extern const char * deparse_alter_type_stmt(AlterTableStmt *stmt);
+
+/* forward declarations for deparse_function_stmts.c */
+extern const char * deparse_drop_function_stmt(DropStmt *stmt);
+
 
 #endif /* CITUS_DEPARSER_H */

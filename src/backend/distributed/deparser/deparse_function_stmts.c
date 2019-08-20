@@ -37,15 +37,19 @@ static void
 appendDropFunctionStmt(StringInfo buf, DropStmt *stmt)
 {
 	/*
-	 * TODO: check that this comment is still valid. (I copy pasted)
+	 * TODO: Hanefi you should check that this comment is still valid.
+	 *
 	 * already tested at call site, but for future it might be collapsed in a
 	 * deparse_function_stmt so be safe and check again
 	 */
 	Assert(stmt->removeType == OBJECT_FUNCTION);
 
 	appendStringInfo(buf, "DROP FUNCTION ");
+	if (stmt->missing_ok)
+	{
+		appendStringInfoString(buf, "IF EXISTS ");
+	}
 	appendFunctionNameList(buf, stmt->objects);
-
 	if (stmt->behavior == DROP_CASCADE)
 	{
 		appendStringInfoString(buf, " CASCADE");
@@ -80,6 +84,11 @@ appendFunctionNameList(StringInfo buf, List *objects)
 
 		objectWithArgs = castNode(ObjectWithArgs, object);
 		name = NameListToString(objectWithArgs->objname);
+
+		/*
+		 * TODO: test optional argmode/argname params
+		 * and make sure that the parse tree contains enough info to determine function's identity
+		 */
 		args = TypeNameListToString(objectWithArgs->objargs);
 
 		appendStringInfoString(buf, name);

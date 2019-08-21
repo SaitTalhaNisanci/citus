@@ -96,6 +96,10 @@ appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt)
 				appendStringInfo(buf, " SECURITY DEFINER");
 			}
 		}
+		else if (strcmp(def->defname, "parallel") == 0)
+		{
+			appendStringInfo(buf, " PARALLEL %s", strVal(def->arg));
+		}
 	}
 
 	/* TODO: use other attributes to deparse the query here  */

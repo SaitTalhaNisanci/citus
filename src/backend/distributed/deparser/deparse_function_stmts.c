@@ -16,8 +16,22 @@
 #include "parser/parse_type.h"
 
 /* forward declaration for deparse functions */
+static void appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt);
 static void appendDropFunctionStmt(StringInfo buf, DropStmt *stmt);
 static void appendFunctionNameList(StringInfo buf, List *objects);
+static void appendFunctionName(StringInfo buf, ObjectWithArgs *func);
+
+const char *
+deparse_alter_function_stmt(AlterFunctionStmt *stmt)
+{
+	StringInfoData str = { 0 };
+	initStringInfo(&str);
+
+	appendAlterFunctionStmt(&str, stmt);
+
+	return str.data;
+}
+
 
 const char *
 deparse_drop_function_stmt(DropStmt *stmt)
@@ -30,6 +44,18 @@ deparse_drop_function_stmt(DropStmt *stmt)
 	appendDropFunctionStmt(&str, stmt);
 
 	return str.data;
+}
+
+
+static void
+appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt)
+{
+	appendStringInfo(buf, "ALTER FUNCTION ");
+	appendFunctionName(buf, stmt->func);
+
+	/* TODO: use other attributes to deparse the query here  */
+
+	appendStringInfoString(buf, ";");
 }
 
 
@@ -65,9 +91,7 @@ appendFunctionNameList(StringInfo buf, List *objects)
 	foreach(objectCell, objects)
 	{
 		Node *object = lfirst(objectCell);
-		ObjectWithArgs *objectWithArgs = NULL;
-		char *name = NULL;
-		char *args = NULL;
+		ObjectWithArgs *func = NULL;
 
 		if (objectCell != list_head(objects))
 		{
@@ -75,21 +99,24 @@ appendFunctionNameList(StringInfo buf, List *objects)
 		}
 
 		Assert(IsA(object, ObjectWithArgs));
-		objectWithArgs = castNode(ObjectWithArgs, object);
-		name = NameListToString(objectWithArgs->objname);
+		func = castNode(ObjectWithArgs, object);
 
-		/*
-		 * TODO: test optional argmode/argname params
-		 * and make sure that the parse tree contains enough info to determine function's identity
-		 */
-		args = TypeNameListToString(objectWithArgs->objargs);
+		appendFunctionName(buf, func);
+	}
+}
 
-		appendStringInfoString(buf, name);
 
-		/* append the optional arg list if provided */
-		if (args)
-		{
-			appendStringInfo(buf, "(%s)", args);
-		}
+static void
+appendFunctionName(StringInfo buf, ObjectWithArgs *func)
+{
+	char *name = NameListToString(func->objname);
+	char *args = TypeNameListToString(func->objargs);
+
+	appendStringInfoString(buf, name);
+
+	/* append the optional arg list if provided */
+	if (args)
+	{
+		appendStringInfo(buf, "(%s)", args);
 	}
 }

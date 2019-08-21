@@ -19,11 +19,14 @@
 
 
 List *
-PlanAlterFunctionStmt(AlterFunctionStmt *alterFunctionStatement,
-					  const char *alterFunctionCommand)
+PlanAlterFunctionStmt(AlterFunctionStmt *alterFunctionStmt,
+					  const char *querystring)
 {
-	ereport(LOG, ((errmsg("ALTER FUNC distribution not implemented yet"),
-				   errhint("check function.c for more info"))));
+	const char *alterStmtSql = NULL;
+
+	alterStmtSql = deparse_alter_function_stmt(alterFunctionStmt);
+	ereport(LOG, (errmsg("deparsed alter function statement"),
+				  errdetail("sql: %s", alterStmtSql)));
 
 	return NIL;
 }

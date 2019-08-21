@@ -37,6 +37,7 @@ extern const char * deparse_alter_type_stmt(AlterTableStmt *stmt);
 
 /* forward declarations for deparse_function_stmts.c */
 extern const char * deparse_drop_function_stmt(DropStmt *stmt);
+extern const char * deparse_alter_function_stmt(AlterFunctionStmt *stmt);
 
 
 #endif /* CITUS_DEPARSER_H */

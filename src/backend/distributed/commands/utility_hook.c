@@ -362,6 +362,13 @@ multi_ProcessUtility(PlannedStmt *pstmt,
 			}
 		}
 
+		if (IsA(parsetree, AlterFunctionStmt))
+		{
+			AlterFunctionStmt *alterFunctionStmt = (AlterFunctionStmt *) parsetree;
+
+			ddlJobs = PlanAlterFunctionStmt(alterFunctionStmt, queryString);
+		}
+
 		/*
 		 * ALTER TABLE ... RENAME statements have their node type as RenameStmt and
 		 * not AlterTableStmt. So, we intercept RenameStmt to tackle these commands.

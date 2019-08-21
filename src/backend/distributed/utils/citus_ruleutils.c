@@ -746,21 +746,21 @@ deparse_shard_reindex_statement(ReindexStmt *origStmt, Oid distrelid, int64 shar
 		case REINDEX_OBJECT_SCHEMA:
 		{
 			appendStringInfo(buffer, "SCHEMA %s",
-							 reindexStmt->name);
+							 quote_identifier(reindexStmt->name));
 			break;
 		}
 
 		case REINDEX_OBJECT_SYSTEM:
 		{
 			appendStringInfo(buffer, "SYSTEM %s",
-							 reindexStmt->name);
+							 quote_identifier(reindexStmt->name));
 			break;
 		}
 
 		case REINDEX_OBJECT_DATABASE:
 		{
 			appendStringInfo(buffer, "DATABASE %s",
-							 reindexStmt->name);
+							 quote_identifier(reindexStmt->name));
 			break;
 		}
 	}

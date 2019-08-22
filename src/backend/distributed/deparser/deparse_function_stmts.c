@@ -29,6 +29,7 @@ static void appendDefElemVolatility(StringInfo buf, DefElem *def);
 static void appendDefElemLeakproof(StringInfo buf, DefElem *def);
 static void appendDefElemSecurity(StringInfo buf, DefElem *def);
 static void appendDefElemParallel(StringInfo buf, DefElem *def);
+static void appendDefElemCost(StringInfo buf, DefElem *def);
 
 const char *
 deparse_alter_function_stmt(AlterFunctionStmt *stmt)
@@ -163,6 +164,10 @@ appendDefElem(StringInfo buf, DefElem *def)
 	{
 		appendDefElemParallel(buf, def);
 	}
+	else if (strcmp(def->defname, "cost") == 0)
+	{
+		appendDefElemCost(buf, def);
+	}
 }
 
 
@@ -216,4 +221,11 @@ static void
 appendDefElemParallel(StringInfo buf, DefElem *def)
 {
 	appendStringInfo(buf, " PARALLEL %s", strVal(def->arg));
+}
+
+
+static void
+appendDefElemCost(StringInfo buf, DefElem *def)
+{
+	appendStringInfo(buf, " COST %s", strVal(def->arg));
 }

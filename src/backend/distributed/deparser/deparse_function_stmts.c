@@ -23,6 +23,13 @@ static void appendDropFunctionStmt(StringInfo buf, DropStmt *stmt);
 static void appendFunctionNameList(StringInfo buf, List *objects);
 static void appendFunctionName(StringInfo buf, ObjectWithArgs *func);
 
+static void appendDefElem(StringInfo buf, DefElem *def);
+static void appendDefElemStrict(StringInfo buf, DefElem *def);
+static void appendDefElemVolatility(StringInfo buf, DefElem *def);
+static void appendDefElemLeakproof(StringInfo buf, DefElem *def);
+static void appendDefElemSecurity(StringInfo buf, DefElem *def);
+static void appendDefElemParallel(StringInfo buf, DefElem *def);
+
 const char *
 deparse_alter_function_stmt(AlterFunctionStmt *stmt)
 {
@@ -62,44 +69,7 @@ appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt)
 		ereport(LOG, (errmsg("defElem found"),
 					  errdetail("name: %s", def->defname)));
 
-		if (strcmp(def->defname, "strict") == 0)
-		{
-			if (intVal(def->arg) == 1)
-			{
-				appendStringInfo(buf, " STRICT");
-			}
-			else
-			{
-				appendStringInfo(buf, " CALLED ON NULL INPUT");
-			}
-		}
-		else if (strcmp(def->defname, "volatility") == 0)
-		{
-			appendStringInfo(buf, " %s", strVal(def->arg));
-		}
-		else if (strcmp(def->defname, "leakproof") == 0)
-		{
-			if (intVal(def->arg) == 0)
-			{
-				appendStringInfo(buf, " NOT");
-			}
-			appendStringInfo(buf, " LEAKPROOF");
-		}
-		else if (strcmp(def->defname, "security") == 0)
-		{
-			if (intVal(def->arg) == 0)
-			{
-				appendStringInfo(buf, " SECURITY INVOKER");
-			}
-			else
-			{
-				appendStringInfo(buf, " SECURITY DEFINER");
-			}
-		}
-		else if (strcmp(def->defname, "parallel") == 0)
-		{
-			appendStringInfo(buf, " PARALLEL %s", strVal(def->arg));
-		}
+		appendDefElem(buf, def);
 	}
 
 	/* TODO: use other attributes to deparse the query here  */
@@ -167,4 +137,83 @@ appendFunctionName(StringInfo buf, ObjectWithArgs *func)
 	{
 		appendStringInfo(buf, "(%s)", args);
 	}
+}
+
+
+static void
+appendDefElem(StringInfo buf, DefElem *def)
+{
+	if (strcmp(def->defname, "strict") == 0)
+	{
+		appendDefElemStrict(buf, def);
+	}
+	else if (strcmp(def->defname, "volatility") == 0)
+	{
+		appendDefElemVolatility(buf, def);
+	}
+	else if (strcmp(def->defname, "leakproof") == 0)
+	{
+		appendDefElemLeakproof(buf, def);
+	}
+	else if (strcmp(def->defname, "security") == 0)
+	{
+		appendDefElemSecurity(buf, def);
+	}
+	else if (strcmp(def->defname, "parallel") == 0)
+	{
+		appendDefElemParallel(buf, def);
+	}
+}
+
+
+static void
+appendDefElemStrict(StringInfo buf, DefElem *def)
+{
+	if (intVal(def->arg) == 1)
+	{
+		appendStringInfo(buf, " STRICT");
+	}
+	else
+	{
+		appendStringInfo(buf, " CALLED ON NULL INPUT");
+	}
+}
+
+
+static void
+appendDefElemVolatility(StringInfo buf, DefElem *def)
+{
+	appendStringInfo(buf, " %s", strVal(def->arg));
+}
+
+
+static void
+appendDefElemLeakproof(StringInfo buf, DefElem *def)
+{
+	if (intVal(def->arg) == 0)
+	{
+		appendStringInfo(buf, " NOT");
+	}
+	appendStringInfo(buf, " LEAKPROOF");
+}
+
+
+static void
+appendDefElemSecurity(StringInfo buf, DefElem *def)
+{
+	if (intVal(def->arg) == 0)
+	{
+		appendStringInfo(buf, " SECURITY INVOKER");
+	}
+	else
+	{
+		appendStringInfo(buf, " SECURITY DEFINER");
+	}
+}
+
+
+static void
+appendDefElemParallel(StringInfo buf, DefElem *def)
+{
+	appendStringInfo(buf, " PARALLEL %s", strVal(def->arg));
 }

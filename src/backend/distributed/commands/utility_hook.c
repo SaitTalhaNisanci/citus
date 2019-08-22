@@ -60,8 +60,6 @@ bool EnableDDLPropagation = true; /* ddl propagation is enabled */
 PropSetCmdBehavior PropagateSetCommands = PROPSETCMD_NONE; /* SET prop off */
 static bool shouldInvalidateForeignKeyGraph = false;
 static int activeAlterTables = 0;
-static int activeCreateExtension = 0;
-static int activeAlterExtension = 0;
 
 
 /* Local functions forward declarations for helper functions */
@@ -871,18 +869,6 @@ trackStatementDepth(Node *parsetree, const bool increment)
 			break;
 		}
 
-		case T_CreateExtensionStmt:
-		{
-			activeCreateExtension += diff;
-			break;
-		}
-
-		case T_AlterExtensionStmt:
-		{
-			activeAlterExtension += diff;
-			break;
-		}
-
 		default:
 		{ }
 	}
@@ -897,25 +883,4 @@ bool
 AlterTableInProgress(void)
 {
 	return activeAlterTables > 0;
-}
-
-
-bool
-CreateExtensionInProgess(void)
-{
-	return activeCreateExtension > 0;
-}
-
-
-bool
-AlterExtensionInProgess(void)
-{
-	return activeAlterExtension > 0;
-}
-
-
-bool
-ExtensionStmtInProgess(void)
-{
-	return CreateExtensionInProgess() || AlterExtensionInProgess();
 }

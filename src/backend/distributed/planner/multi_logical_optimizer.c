@@ -3131,7 +3131,12 @@ AggregateFunctionOidWithoutInput(const char *functionName)
 	heapTuple = systable_getnext(scanDescriptor);
 	if (HeapTupleIsValid(heapTuple))
 	{
+#if PG_VERSION_NUM < 120000
 		functionOid = HeapTupleGetOid(heapTuple);
+#else
+		Form_pg_proc procForm = (Form_pg_proc) GETSTRUCT(heapTuple);
+		functionOid = procForm->oid;
+#endif
 	}
 
 	if (functionOid == InvalidOid)

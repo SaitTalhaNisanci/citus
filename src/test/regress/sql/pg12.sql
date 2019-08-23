@@ -253,6 +253,48 @@ UPDATE test SET y = 40;
 COMMIT;
 SELECT DISTINCT y FROM test;
 
+-- non deterministic collations
+CREATE COLLATION case_insensitive (
+	provider = icu,
+	locale = 'und-u-ks-level2',
+	deterministic = false
+);
+\c - - - :worker_1_port
+CREATE COLLATION test_pg12.case_insensitive (
+	provider = icu,
+	locale = 'und-u-ks-level2',
+	deterministic = false
+);
+\c - - - :worker_2_port
+CREATE COLLATION test_pg12.case_insensitive (
+	provider = icu,
+	locale = 'und-u-ks-level2',
+	deterministic = false
+);
+\c - - - :master_port
+set search_path to test_pg12;
+
+CREATE TABLE col_test (
+	id text collate case_insensitive,
+	val text collate case_insensitive,
+	key int
+);
+
+insert into col_test values
+	('asdf','vaLue', 1), ('Asdf','vAlue', 2), ('asDF','valUE', 3);
+
+select create_distributed_table('col_test', 'id');
+
+insert into col_test values
+	('aSdf','vALue', 4), ('AsDf','vAluE', 5), ('asdF','value', 6);
+
+select count(*)
+from col_test
+where id = 'asdf' COLLATE case_insensitive;
+
+select count(*)
+from col_test
+where val = 'value' COLLATE case_insensitive;
 
 \set VERBOSITY terse
 drop schema test_pg12 cascade;

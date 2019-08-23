@@ -159,11 +159,11 @@ step s3-view-worker:
 
 query          query_hostname query_hostport master_query_host_namemaster_query_host_portstate          wait_event_typewait_event     usename        datname        
 
-COPY (SELECT count(*) AS count FROM test_table_102113 test_table WHERE true) TO STDOUTlocalhost      57638          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression     
+COPY (SELECT count(*) AS count FROM test_table_102113 test_table WHERE true) TO STDOUTlocalhost      57638          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression
 COPY (SELECT count(*) AS count FROM test_table_102112 test_table WHERE true) TO STDOUTlocalhost      57637          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression     
 COPY (SELECT count(*) AS count FROM test_table_102111 test_table WHERE true) TO STDOUTlocalhost      57638          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression     
 COPY (SELECT count(*) AS count FROM test_table_102110 test_table WHERE true) TO STDOUTlocalhost      57637          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression     
-step s2-rollback: 
+step s2-rollback:
 	ROLLBACK;
 
 step s1-commit: 
@@ -217,8 +217,8 @@ step s3-view-worker:
 
 query          query_hostname query_hostport master_query_host_namemaster_query_host_portstate          wait_event_typewait_event     usename        datname        
 
-SELECT count(*) AS count FROM public.test_table_102115 test_table WHERE (column1 OPERATOR(pg_catalog.=) 55)localhost      57638                         0              idle           Client         ClientRead     postgres       regression     
-step s2-rollback: 
+SELECT count(*) AS count FROM public.test_table_102115 test_table WHERE (column1 OPERATOR(pg_catalog.=) 55)localhost      57638          coordinator_host57636          idle in transactionClient         ClientRead     postgres       regression
+step s2-rollback:
 	ROLLBACK;
 
 step s1-commit: 

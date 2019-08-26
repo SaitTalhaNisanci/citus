@@ -30,6 +30,7 @@ static void appendDefElemLeakproof(StringInfo buf, DefElem *def);
 static void appendDefElemSecurity(StringInfo buf, DefElem *def);
 static void appendDefElemParallel(StringInfo buf, DefElem *def);
 static void appendDefElemCost(StringInfo buf, DefElem *def);
+static void appendDefElemRows(StringInfo buf, DefElem *def);
 
 const char *
 deparse_alter_function_stmt(AlterFunctionStmt *stmt)
@@ -168,6 +169,10 @@ appendDefElem(StringInfo buf, DefElem *def)
 	{
 		appendDefElemCost(buf, def);
 	}
+	else if (strcmp(def->defname, "rows") == 0)
+	{
+		appendDefElemRows(buf, def);
+	}
 }
 
 
@@ -228,4 +233,11 @@ static void
 appendDefElemCost(StringInfo buf, DefElem *def)
 {
 	appendStringInfo(buf, " COST %s", strVal(def->arg));
+}
+
+
+static void
+appendDefElemRows(StringInfo buf, DefElem *def)
+{
+	appendStringInfo(buf, " ROWS %s", strVal(def->arg));
 }

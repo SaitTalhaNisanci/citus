@@ -10,12 +10,14 @@
 #include "postgres.h"
 
 #include "catalog/namespace.h"
+#include "distributed/commands.h"
 #include "distributed/deparser.h"
 #include "lib/stringinfo.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodes.h"
 #include "nodes/value.h"
 #include "parser/parse_type.h"
+#include "utils/guc.h"
 
 /* forward declaration for deparse functions */
 static void appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt);
@@ -31,6 +33,7 @@ static void appendDefElemSecurity(StringInfo buf, DefElem *def);
 static void appendDefElemParallel(StringInfo buf, DefElem *def);
 static void appendDefElemCost(StringInfo buf, DefElem *def);
 static void appendDefElemRows(StringInfo buf, DefElem *def);
+static void appendDefElemSet(StringInfo buf, DefElem *def);
 
 const char *
 deparse_alter_function_stmt(AlterFunctionStmt *stmt)
@@ -173,6 +176,10 @@ appendDefElem(StringInfo buf, DefElem *def)
 	{
 		appendDefElemRows(buf, def);
 	}
+	else if (strcmp(def->defname, "set") == 0)
+	{
+		appendDefElemSet(buf, def);
+	}
 }
 
 
@@ -240,4 +247,54 @@ static void
 appendDefElemRows(StringInfo buf, DefElem *def)
 {
 	appendStringInfo(buf, " ROWS %s", strVal(def->arg));
+}
+
+
+static void
+appendDefElemSet(StringInfo buf, DefElem *def)
+{
+	VariableSetStmt *setStmt = castNode(VariableSetStmt, def->arg);
+	char *setVariableArgs = ExtractSetVariableArgs(setStmt);
+
+	switch (setStmt->kind)
+	{
+		case VAR_SET_VALUE:
+		{
+			appendStringInfo(buf, " SET %s = %s", setStmt->name, setVariableArgs);
+			break;
+		}
+
+		case VAR_SET_CURRENT:
+		{
+			appendStringInfo(buf, " SET %s FROM CURRENT", setStmt->name);
+			break;
+		}
+
+		case VAR_SET_DEFAULT:
+		{
+			appendStringInfo(buf, " SET %s TO DEFAULT", setStmt->name);
+			break;
+		}
+
+		case VAR_RESET:
+		{
+			appendStringInfo(buf, " RESET %s", setStmt->name);
+			break;
+		}
+
+		case VAR_RESET_ALL:
+		{
+			appendStringInfoString(buf, " RESET ALL");
+			break;
+		}
+
+		/* VAR_SET_MULTI is a special case for SET TRANSACTION that should not occur here */
+		case VAR_SET_MULTI:
+		default:
+		{
+			/* TODO improve this error message */
+			ereport(ERROR, (errmsg("Unable to deparse SET statement")));
+			break;
+		}
+	}
 }

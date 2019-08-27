@@ -9,15 +9,21 @@
 
 #include "postgres.h"
 
+#include "access/htup_details.h"
 #include "catalog/namespace.h"
+#include "catalog/pg_proc.h"
 #include "distributed/commands.h"
 #include "distributed/deparser.h"
 #include "lib/stringinfo.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodes.h"
 #include "nodes/value.h"
+#include "parser/parse_func.h"
 #include "parser/parse_type.h"
+#include "utils/builtins.h"
 #include "utils/guc.h"
+#include "utils/lsyscache.h"
+#include "utils/syscache.h"
 
 /* forward declaration for deparse functions */
 static void appendAlterFunctionStmt(StringInfo buf, AlterFunctionStmt *stmt);
@@ -129,13 +135,39 @@ appendFunctionNameList(StringInfo buf, List *objects)
 }
 
 
+static char *
+qualified_function_name(ObjectWithArgs *func)
+{
+	Oid funcid = InvalidOid;
+	HeapTuple proctup;
+	Form_pg_proc procform;
+	char *proname = NULL;
+	char *nspname = NULL;
+	char *result = NULL;
+
+	funcid = LookupFuncWithArgs(OBJECT_FUNCTION, func, false);
+	proctup = SearchSysCache1(PROCOID, ObjectIdGetDatum(funcid));
+	if (!HeapTupleIsValid(proctup))
+	{
+		elog(ERROR, "cache lookup failed for function %u", funcid);
+	}
+
+	procform = (Form_pg_proc) GETSTRUCT(proctup);
+	proname = NameStr(procform->proname);
+	nspname = get_namespace_name(procform->pronamespace);
+	result = quote_qualified_identifier(nspname, proname);
+
+	return result;
+}
+
+
 static void
 appendFunctionName(StringInfo buf, ObjectWithArgs *func)
 {
-	char *name = NameListToString(func->objname);
+	char *qualifiedFuncName = qualified_function_name(func);
 	char *args = TypeNameListToString(func->objargs);
 
-	appendStringInfoString(buf, name);
+	appendStringInfoString(buf, qualifiedFuncName);
 
 	/* append the optional arg list if provided */
 	if (args)

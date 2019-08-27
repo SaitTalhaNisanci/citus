@@ -214,7 +214,7 @@ recurse_pg_depend(const ObjectAddress *target,
 		if (follow == NULL || !follow(context, pg_depend))
 		{
 			/* skip all pg_depend entries the user didn't want to follow */
-			return;
+			continue;
 		}
 
 		/*
@@ -346,6 +346,20 @@ SupportedDependencyByCitus(const ObjectAddress *address)
 			 * should be unreachable, break here is to make sure the function has a path
 			 * without return, instead of falling through to the next block */
 			break;
+		}
+
+		case OCLASS_CLASS:
+		{
+			/*
+			 * composite types have a reference to a relation of composite type, we need
+			 * to follow those to get the dependencies of type fields.
+			 */
+			if (get_rel_relkind(address->objectId) == RELKIND_COMPOSITE_TYPE)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		default:
